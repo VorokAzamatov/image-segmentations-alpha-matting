@@ -79,9 +79,9 @@ Results vary depending on object complexity and background conditions.
 
 <h4 align="center">Below are selected examples where the model demonstrates reasonable generalization:</h4>
 <p align="center">
-  <img src="test_predictions/0020.png" width="30%"/>
-  <img src="test_predictions/0023.png" width="30%"/>
-  <img src="test_predictions/0088.png" width="30%"/>
+  <img src="assets/test_predictions/0020.png" width="30%"/>
+  <img src="assets/test_predictions/0023.png" width="30%"/>
+  <img src="assets/test_predictions/0088.png" width="30%"/>
 </p>
 
 Full inference results on unseen data are available in `test_predictions/`.
@@ -98,16 +98,66 @@ Full inference results on unseen data are available in `test_predictions/`.
 
 ```
 image-segmentation-alpha-matting/
-│
-├─ notebookfiles/ # Jupyter notebook with demo
-├─ scripts/ # inference / visualization scripts
-├─ best_models/ # trained model (not uploaded, .gitkeep)
-├─ FT_best_models/ # fine-tuned model (not uploaded, .gitkeep)
-├─ test_dataset/ # sample dataset (not uploaded)
-├─ test_predictions/ # sample outputs (not uploaded)
-├─ predicted/ # inference outputs (empty)
-├─ requirements.txt
-└─ README.md
+|   .gitignore                # Git ignore file
+|   infer.py                   # Inference script
+|   README.md                  # Project README
+|   requirements.txt           # Python dependencies
+|   train.py                   # Training script
+|
++---artifacts                  # Trained models and metrics
+|   +---best_models
+|   |   +---finetune
+|   |   |       FT_best_model_13epoch.pt
+|   |   |
+|   |   \---train
+|   |           best_model_38epoch.pt
+|   |
+|   \---metrics
+|       +---finetune
+|       \---train
+|               metrics.pt
+|
++---assets                     # Images and predictions for visualization
+|   |   TestResAfterFT.png
+|   |   TestResBeforeFT.png
+|   |   training_metrics.png
+|   |   TrainResAfterFT.png
+|   |
+|   \---test_predictions       # Sample predicted masks
+|           0001.png
+|           0002.png
+|           ...
+|           0100.png
+|
++---configs                    # Configurations for training and fine-tuning
+|       config.py
+|
++---data                       # Input datasets
+|   \---test_dataset
+|           0001.png
+|           0002.png
+|           ...
+|           0100.png
+|
++---notebooks                  # Jupyter notebooks
+|       main.ipynb             # Demo notebook with training and inference
+|
+\---src                        # Source code for models, datasets, and training
+    |   utils.py               # Utility functions
+    |
+    +---datasets
+    |       datasets.py        # Dataset classes
+    |
+    +---metrics
+    |       mse_metric.py      # Metric calculation
+    |
+    +---models
+    |       unet.py            # UNet architecture
+    |
+    \---training
+            callbacks.py       # Early stopping, scheduler callbacks
+            loops.py           # Training and evaluation loops
+
 ```
 
 ---
@@ -115,19 +165,14 @@ image-segmentation-alpha-matting/
 
 ## Installation
 ```bash
-git clone https://github.com/your_username/image-segmentation-alpha-matting.git
+git clone https://github.com/VorokAzamatov/image-segmentations-alpha-matting.git
 cd image-segmentation-alpha-matting
 pip install -r requirements.txt
 ```
 
-## Usage
-- **Notebook demo**: `notebookfiles/main.ipynb`  
-  Demonstrates training, evaluation, fine-tuning, and visualization.
-
-
 
 ## Notes
-- Pre-trained models are stored in `best_models/` and `FT_best_models/`.  
+- Pre-trained models are stored in `artifacts/best_models/`.  
   Only the best models are uploaded due to size limitations.
 - Designed for quick evaluation, visualization, and adaptation to new datasets.
 - The model was trained on relatively small datasets and may require further fine-tuning for new domains.
