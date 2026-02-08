@@ -1,3 +1,5 @@
 __pycache__/
 **/__pycache__/
 src/image_segmentation.egg-info
+mlflow.db
+mlruns/

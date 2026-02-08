@@ -38,6 +38,7 @@ config = {
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
 
     # General model parameters
+    "IMAGE_SIZE": 512,
     "BATCH_SIZE": 16,
     "BASE_CH": 32,
     "IN_CH": 3,
@@ -104,6 +105,7 @@ set_seed(SEED)
 DEVICE = config["DEVICE"]
 
 # General model parameters
+IMAGE_SIZE = config["IMAGE_SIZE"]
 BATCH_SIZE = config["BATCH_SIZE"]
 BASE_CH = config["BASE_CH"]
 IN_CH = config["IN_CH"]

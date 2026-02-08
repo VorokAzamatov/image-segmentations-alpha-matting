@@ -1,4 +1,5 @@
 import torch
+import mlflow
 
 import os
 
@@ -51,3 +52,15 @@ class EarlyStopping(object):
         if self.best_model is not None:
             model.load_state_dict(self.best_model)
         return model
+    
+
+class MLflowLoggerCallback(object):
+    def __init__(self, stage):
+        self.stage = stage
+
+    def log_epoch(self, **kwargs):
+        mlflow.log_metric(f"{self.stage}_train_loss", kwargs['train_loss'], step=kwargs['epoch'])
+        mlflow.log_metric(f"{self.stage}_train_mse", kwargs['train_mse'], step=kwargs['epoch'])
+        mlflow.log_metric(f"{self.stage}_val_loss", kwargs['val_loss'], step=kwargs['epoch'])
+        mlflow.log_metric(f"{self.stage}_val_mse", kwargs['val_mse'], step=kwargs['epoch'])
+        mlflow.log_metric(f"{self.stage}_lr", kwargs['lr'], step=kwargs['epoch'])

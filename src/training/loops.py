@@ -62,7 +62,7 @@ def eval_epoch(model, loader, criterion, device):
     return mean_loss, mean_mse
 
 
-def run_train(model, optimizer, criterion, epochs, every_n_ep, train_loader, val_loader, lr_scheduler, earlystopping, device):
+def run_train(model, optimizer, criterion, epochs, every_n_ep, train_loader, val_loader, lr_scheduler, earlystopping, device, logger_callback=None):
     mean_train_loss_list = []
     mean_train_mse_list = []
     mean_val_loss_list = []
@@ -81,6 +81,9 @@ def run_train(model, optimizer, criterion, epochs, every_n_ep, train_loader, val
         lr_scheduler.step(mean_val_loss)
         lr = lr_scheduler._last_lr[0]
 
+        if logger_callback is not None:
+            logger_callback.log_epoch(epoch, mean_train_mse, mean_train_loss, mean_val_mse, mean_val_loss, lr)
+            
 
         mean_train_loss_list.append(mean_train_loss)
         mean_train_mse_list.append(mean_train_mse)
