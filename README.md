@@ -20,6 +20,7 @@ Pipeline for precise object segmentation and alpha matting using **U-Net**.
 - Numpy
 - Scikit-learn
 - Pillow
+- Click
 
 
 ## Motivation
@@ -100,9 +101,10 @@ Full inference results on unseen data are available in `test_predictions/`.
 image-segmentation-alpha-matting/
 |   .gitignore                # Git ignore file
 |   infer.py                   # Inference script
+|   train.py                   # Training script
+|   setup.py
 |   README.md                  # Project README
 |   requirements.txt           # Python dependencies
-|   train.py                   # Training script
 |
 +---artifacts                  # Trained models and metrics
 |   +---best_models
@@ -133,6 +135,11 @@ image-segmentation-alpha-matting/
 |       config.py
 |
 +---data                       # Input datasets
+|       test_image.jpg         # test image for inference 
+|
+|   \---AIM-500-dataset
+|   \---duts-dataset
+|                       
 |   \---test_dataset
 |           0001.png
 |           0002.png
@@ -142,8 +149,13 @@ image-segmentation-alpha-matting/
 +---notebooks                  # Jupyter notebooks
 |       main.ipynb             # Demo notebook with training and inference
 |
++---outputs
+|       test_mask.png          # test output mask after inference
+|
 \---src                        # Source code for models, datasets, and training
     |   utils.py               # Utility functions
+    |
+    |   inference_utils.py
     |
     +---datasets
     |       datasets.py        # Dataset classes
@@ -157,7 +169,6 @@ image-segmentation-alpha-matting/
     \---training
             callbacks.py       # Early stopping, scheduler callbacks
             loops.py           # Training and evaluation loops
-
 ```
 
 ---
@@ -168,6 +179,20 @@ image-segmentation-alpha-matting/
 git clone https://github.com/VorokAzamatov/image-segmentations-alpha-matting.git
 cd image-segmentation-alpha-matting
 pip install -r requirements.txt
+```
+
+## Usage
+
+### Inference with CLI
+Run inference on a single image using the trained model:
+
+```bash
+python infer.py \
+    -i "path/to/input_image.jpg" \
+    -w "path/to/model_weights.pt" \
+    -o "path/to/output_mask.png" \
+    -d "cuda" \
+    --img_size 512
 ```
 
 

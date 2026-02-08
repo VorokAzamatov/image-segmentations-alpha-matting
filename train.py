@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch import optim
 
-from models.unet import UNet
+from models.UNet import UNet
 from training.loops import run_train
 from training.callbacks import EarlyStopping
 from utils import get_loaders, save_metrics

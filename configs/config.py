@@ -23,8 +23,8 @@ config = {
     "FINETUNE": False,
 
     # ========= Paths =========
-    "DUTS_DATA_PATH": "data/duts-saliency-detection-dataset",
-    "AIM500_DATA_PATH": "data/dataset-matting/AIM-500-20251128T092629Z-1-001/AIM-500",
+    "DUTS_DATA_PATH": "data/duts-dataset",
+    "AIM500_DATA_PATH": "data/AIM-500-dataset",
     "BEST_MODEL_SAVE_DIR": "best_models/train_best_models",
     "FT_BEST_MODEL_SAVE_DIR": "best_models/FT_best_models",
     "METRICS_SAVE_DIR": "metrics/train_metrics",
@@ -39,7 +39,7 @@ config = {
 
     # General model parameters
     "BATCH_SIZE": 16,
-    "BASE_CH": 64,
+    "BASE_CH": 32,
     "IN_CH": 3,
     "NUM_CL": 1,
 

@@ -1,31 +1,48 @@
+import click
 import torch
-import cv2
-import numpy as np
+
+import os
 
 from PIL import Image
 
-from configs.config import DEVICE
-from train import model
+from inference_utils import load_model, predict_single_image
+from configs.config import DEVICE, IN_CH, BASE_CH, NUM_CL
 from datasets.datasets import get_val_transforms
 
-def predict_single_image(img_path, model, transforms, device):
-    with torch.no_grad():
-        img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = transforms(image=img)['image']
-        
-        x = img.unsqueeze(dim=0).to(device)
+
+
+@click.command()
+
+@click.option("--img_path", "-i", required=True, help="Path to input image")
+@click.option("--weights_path", "-w", required=True, help="Path to model weights")
+@click.option("--output_path", "-o", required=True, help="Path to save predicted mask")
+@click.option("--img_size", default=512, type=int, help="Resize image to this size for inference")
+@click.option("--device", "-d", default=DEVICE, help="Device using for inference")
+
+def main(img_path, weights_path, output_path, img_size, device):
+    device = torch.device(device)
+
+    if not os.path.exists(img_path):
+        raise FileNotFoundError(f"Input image not found: {img_path}")
+
+    if not os.path.exists(weights_path):
+        raise FileNotFoundError(f"Model weights not found: {weights_path}")
+
+    transforms = get_val_transforms(img_size)
+    model = load_model(weights_path, IN_CH, NUM_CL, BASE_CH, device=device)
+
+    mask = predict_single_image(img_path, model, transforms, device=device)
+
+
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
+    Image.fromarray(mask).save(output_path)
+
+    print(f"Output mask saved to {output_path}")
     
-        pred = torch.sigmoid(model(x))
-    
-        mask = pred[0, 0].detach().cpu().numpy()
-        mask = (mask * 255).clip(0, 255).astype(np.uint8)
-        mask = np.array(Image.fromarray(mask).resize((1024, 1024), resample=Image.BILINEAR))
-
-    return mask
 
 
-img_path = ''
-transforms = get_val_transforms
-
-mask = predict_single_image(img_path, model, transforms, DEVICE)
+if __name__ == '__main__':
+    main()

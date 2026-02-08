@@ -111,7 +111,7 @@ class AIM500_dataset(Dataset):
 def get_train_transforms(img_size=512):
     """Transforms for train"""
     return A.Compose([
-        A.Resize(512, 512),
+        A.Resize(img_size, img_size),
 
         A.HorizontalFlip(p=0.5),                     
         A.Affine(
