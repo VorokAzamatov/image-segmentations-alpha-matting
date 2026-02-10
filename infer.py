@@ -5,9 +5,9 @@ import os
 
 from PIL import Image
 
-from inference_utils import load_model, predict_single_image
+from inference.pipeline import load_model, predict_single_image
 from configs.config import DEVICE, IN_CH, BASE_CH, NUM_CL
-from datasets.datasets import get_val_transforms
+from data.transforms import get_val_transforms
 
 
 

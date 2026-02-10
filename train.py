@@ -8,8 +8,10 @@ from torch import optim
 from models.UNet import UNet
 from training.loops import run_train
 from training.callbacks import EarlyStopping, MLflowLoggerCallback
-from utils import get_loaders, save_metrics
-from datasets.datasets import DUTSdataset, AIM500_dataset, get_train_transforms, get_val_transforms
+from metrics.io import save_metrics
+from data.loaders import get_loaders
+from data.datasets import DUTSdataset, AIM500_dataset
+from data.transforms import get_train_transforms, get_val_transforms
 from configs.config import *
 
 
