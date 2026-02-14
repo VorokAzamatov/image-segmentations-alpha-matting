@@ -5,22 +5,25 @@ import mlflow.pytorch
 from torch import nn
 from torch import optim
 
+from configs.config import *
 from models.UNet import UNet
-from training.loops import run_train
-from training.callbacks import EarlyStopping, MLflowLoggerCallback
 from metrics.io import save_metrics
+from metrics.IoU_metric import iou_metric
+from metrics.mse_metric import mse_metric
+from training.loops import run_train
 from data.loaders import get_loaders
 from data.datasets import DUTSdataset, AIM500_dataset
 from data.transforms import get_train_transforms, get_val_transforms
-from configs.config import *
+from training.callbacks import EarlyStopping, MLflowLoggerCallback
 
 
 
 def main():
-    model = UNet(in_ch=IN_CH, num_cl=NUM_CL, base_ch=BASE_CH).to(DEVICE)
     train_transforms = get_train_transforms(image_size=IMAGE_SIZE)
     val_test_transforms = get_val_transforms(image_size=IMAGE_SIZE)
+    model = UNet(in_ch=IN_CH, num_cl=NUM_CL, base_ch=BASE_CH).to(DEVICE)
 
+    metric_funcs = [mse_metric, iou_metric]
 
     if RUNNING_TRAIN:
         stage = "pretrain"
@@ -46,9 +49,9 @@ def main():
 
         train_loader, val_loader, test_loader = get_loaders(
             dataset_class = DUTSdataset,
+            batch_size = BATCH_SIZE,
             data_path = DUTS_DATA_PATH,
             subset_size = DUTS_SUBSET_SIZE,
-            batch_size = BATCH_SIZE,
             train_transforms = train_transforms,
             val_test_transforms = val_test_transforms
         )
@@ -59,16 +62,16 @@ def main():
             mlflow.log_param("dataset", "DUTS")
 
             mlflow.log_params({
-                "epochs": EPOCHS,
-                "batch_size": BATCH_SIZE,
                 "lr": LR,
+                "epochs": EPOCHS,
                 "base_ch": BASE_CH,
                 "img_size": IMAGE_SIZE,
-                "optimizer": "Adam",
-                "criterion": "BCEWithLogitsLoss",
+                "batch_size": BATCH_SIZE,
+                "criterion": criterion._get_name(),
+                "optimizer": optimizer.__class__.__name__,
             })
 
-            model, metrics_dict = run_train(model, optimizer, criterion, EPOCHS, EVERY_N_EP, train_loader, val_loader, lr_scheduler, earlystopping, logger_callback=mlflow_callback, device=DEVICE)
+            model, metrics_dict = run_train(model, optimizer, criterion, EPOCHS, EVERY_N_EP, train_loader, val_loader, lr_scheduler, earlystopping, DEVICE, metric_funcs, mlflow_callback)
         mlflow.end_run()
 
 
@@ -82,8 +85,8 @@ def main():
         if FINETUNE:
             stage = "finetune"
 
-            FT_optimizer = optim.Adam(model.parameters(), lr=FT_LR)
             FT_criterion = nn.BCEWithLogitsLoss()
+            FT_optimizer = optim.Adam(model.parameters(), lr=FT_LR)
             FT_lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 FT_optimizer,
                 mode = 'min',
@@ -114,13 +117,13 @@ def main():
                 mlflow.log_param("dataset", "AIM-500")
 
                 mlflow.log_params({
-                    "epochs": FT_EPOCHS,
-                    "batch_size": BATCH_SIZE,
                     "lr": FT_LR,
                     "base_ch": BASE_CH,
+                    "epochs": FT_EPOCHS,
                     "img_size": IMAGE_SIZE,
-                    "optimizer": "Adam",
-                    "criterion": "BCEWithLogitsLoss",
+                    "batch_size": BATCH_SIZE,
+                    "criterion": criterion._get_name(),
+                    "optimizer": optimizer.__class__.__name__,
                 })
 
                 model, metrics_dict = run_train(model, FT_optimizer, FT_criterion, FT_EPOCHS, EVERY_N_EP, FT_train_loader, FT_val_loader, FT_lr_scheduler, FT_earlystopping, logger_callback=FT_mlflow_callback, device=DEVICE)

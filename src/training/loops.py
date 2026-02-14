@@ -3,43 +3,48 @@ import torch
 
 from tqdm import tqdm
 
-from metrics import mse_metric
-from utils import visualize_predictions
+from utils.vizualization import visualize_predictions 
 
 
-def train_epoch(model, train_loop, optimizer, criterion, epochs, epoch, device):
-    running_train_loss = []
-    running_train_mse = []
+def train_epoch(model, train_loop, optimizer, criterion, epochs, epoch, device, metric_funcs: list):
+    running_loss = []
+    running_metrics = [ [] for i in range(len(metric_funcs))]
+
 
     model.train()
     for batch in train_loop:
-        x_train = batch['img'].to(device)
-        y_train = batch['mask'].to(device)
+        x = batch['img'].to(device)
+        y = batch['mask'].to(device)
         
-        pred = model(x_train)
+        pred = model(x)
 
-        loss = criterion(pred, y_train)
+        loss = criterion(pred, y)
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        train_mse = mse_metric(pred, y_train)
 
-        running_train_loss.append(loss.item())
-        running_train_mse.append(train_mse.item())
-
-        mean_train_loss = sum(running_train_loss) / len(running_train_loss)
-        mean_train_mse = sum(running_train_mse) / len(running_train_mse)
-
-        train_loop.set_description(f"[{epoch}/{epochs}] train_loss: {mean_train_loss:.4f} | train_mse: {mean_train_mse:.4f}")
-
-    return mean_train_loss, mean_train_mse
+        running_loss.append(loss.item())
+        for i, metric_func in enumerate(metric_funcs):
+            metric_value = metric_func(pred, y)
+            running_metrics[i].append(metric_value.item())
 
 
-def eval_epoch(model, loader, criterion, device):
+        
+        mean_loss = sum(running_loss) / len(running_loss)
+        mean_metrics = [sum(m)/len(m) for m in running_metrics]
+        
+        metrics_str  =  " | ".join([ f"{metric_func.__name__}: {mean_metrics[i]:.4f}"   for i, metric_func in enumerate(metric_funcs) ])
+        train_loop.set_description(f"[{epoch}/{epochs}] train_loss: {mean_loss:.4f} | {metrics_str}")
+
+
+    return mean_loss, { f"train_{metric_func.__name__.replace('_metric', '')}": mean_metrics[i] for i, metric_func in enumerate(metric_funcs) }
+
+
+def eval_epoch(model, loader, criterion, device, metric_funcs: list):
     running_loss = []
-    running_mse = []
+    running_metrics = [ [] for i in range(len(metric_funcs))]
 
     model.eval()
     with torch.no_grad():
@@ -51,62 +56,77 @@ def eval_epoch(model, loader, criterion, device):
             
             loss = criterion(pred, y)
             
-            mse = mse_metric(pred, y)
-
             running_loss.append(loss.item())
-            running_mse.append(mse.item())
+            for i, metric_func in enumerate(metric_funcs):
+                metric_value = metric_func(pred, y)
+                running_metrics[i].append(metric_value.item())
         
         mean_loss = sum(running_loss) / len(running_loss)
-        mean_mse = sum(running_mse) / len(running_mse)
+        mean_metrics = [sum(m)/len(m) for m in running_metrics]
 
-    return mean_loss, mean_mse
+    return mean_loss, { f"val_{metric_func.__name__.replace('_metric', '')}": mean_metrics[i]   for i, metric_func in enumerate(metric_funcs) }
 
 
-def run_train(model, optimizer, criterion, epochs, every_n_ep, train_loader, val_loader, lr_scheduler, earlystopping, device, logger_callback=None):
+def run_train(model, optimizer, criterion, epochs, every_n_ep, train_loader, val_loader, lr_scheduler, earlystopping, device, metric_funcs: list, logger_callback=None):
     mean_train_loss_list = []
-    mean_train_mse_list = []
     mean_val_loss_list = []
-    mean_val_mse_list = []
+    metrics_history = None
     lr_list = []
     
     for epoch in range(1, epochs+1):
         train_loop = tqdm(train_loader, leave = False)
         
-        mean_train_loss, mean_train_mse = train_epoch(model, train_loop, optimizer, criterion, epochs, epoch, device=device)
+        mean_train_loss, train_metrics_dict = train_epoch(model, train_loop, optimizer, criterion, epochs, epoch, metric_funcs= metric_funcs, device=device)
         
-        mean_val_loss, mean_val_mse = eval_epoch(model, val_loader, criterion, device=device)
+        mean_val_loss, val_metrics_dict = eval_epoch(model, val_loader, criterion, metric_funcs= metric_funcs, device=device)
 
+        metrics_dict = train_metrics_dict | val_metrics_dict 
         
+
         earlystopping.step(mean_val_loss, model, epoch)
         lr_scheduler.step(mean_val_loss)
-        lr = lr_scheduler._last_lr[0]
+        lr = optimizer.param_groups[0]['lr']
 
         if logger_callback is not None:
-            logger_callback.log_epoch(epoch, mean_train_mse, mean_train_loss, mean_val_mse, mean_val_loss, lr)
+            logger_callback.log_epoch(
+                metrics_dict = metrics_dict,
+                mean_train_loss = mean_train_loss, 
+                mean_val_loss = mean_val_loss, 
+                epoch = epoch,
+                lr = lr
+            )
             
 
         mean_train_loss_list.append(mean_train_loss)
-        mean_train_mse_list.append(mean_train_mse)
         mean_val_loss_list.append(mean_val_loss)
-        mean_val_mse_list.append(mean_val_mse)
         lr_list.append(lr)
 
-        print(f"[{epoch}/{epochs}] train_loss: {mean_train_loss:.4f} | train_mse: {mean_train_mse:.4f} | val_loss: {mean_val_loss:.4f} | val_mse: {mean_val_mse:.4f} | lr: {lr} ||| best_val_loss: {earlystopping.best_value:.6f}")
+
+        if metrics_history is None:
+            metrics_history = { k: [] for k in metrics_dict.keys() }
+
+        for k, v in metrics_dict.items():
+            metrics_history[k].append(v)
+
+
+        metrics_str = " | ".join([ f"{metric_name}: {metric_value:.4f}" for metric_name, metric_value in metrics_dict.items() ])
+        print(f"[{epoch}/{epochs}] train_loss: {mean_train_loss:.4f} | {metrics_str} | lr: {lr} ||| best_val_loss: {earlystopping.best_value:.6f}")
+
 
         if epoch == 1 or epoch % every_n_ep == 0:
             visualize_predictions(model, val_loader, device, epoch, n=2)
         
-        if earlystopping.should_stop == True:
+        if earlystopping.should_stop:
             print(f"Stopped on epoch: {epoch}")
             break
         
+
     model = earlystopping.get_best_model(model)
-    metrics_dict = {
+    metrics_history_dict = {
         'train_loss_list': mean_train_loss_list,
-        'train_mse_list': mean_train_mse_list,
         'val_loss_list': mean_val_loss_list,
-        'val_mse_list': mean_val_mse_list,
-        'lr_list': lr_list
+        'lr_list': lr_list,
+        **metrics_history
     }
 
-    return model, metrics_dict
+    return model, metrics_history_dict

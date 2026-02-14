@@ -59,8 +59,9 @@ class MLflowLoggerCallback(object):
         self.stage = stage
 
     def log_epoch(self, **kwargs):
-        mlflow.log_metric(f"{self.stage}_train_loss", kwargs['train_loss'], step=kwargs['epoch'])
-        mlflow.log_metric(f"{self.stage}_train_mse", kwargs['train_mse'], step=kwargs['epoch'])
-        mlflow.log_metric(f"{self.stage}_val_loss", kwargs['val_loss'], step=kwargs['epoch'])
-        mlflow.log_metric(f"{self.stage}_val_mse", kwargs['val_mse'], step=kwargs['epoch'])
+        mlflow.log_metric(f"{self.stage}_train_loss", kwargs['mean_train_loss'], step=kwargs['epoch'])
+        mlflow.log_metric(f"{self.stage}_val_loss", kwargs['mean_val_loss'], step=kwargs['epoch'])
         mlflow.log_metric(f"{self.stage}_lr", kwargs['lr'], step=kwargs['epoch'])
+
+        for metric_name, metric_values in kwargs['metrics_dict'].items():
+            mlflow.log_metric(f"{self.stage}_{metric_name}", metric_values, step=kwargs['epoch'])
