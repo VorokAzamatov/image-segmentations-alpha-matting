@@ -9,12 +9,11 @@ from utils.seed import set_seed
 # ======================
 config = {
     # ========= Runtime =========
-    "RUNNING_TRAIN": False,
+    "RUNNING_TRAIN": True,
     "FINETUNE": False,
 
-    # ========= Paths =========
-    "DUTS_DATA_PATH": "data/duts-dataset",
-    "AIM500_DATA_PATH": "data/AIM-500-dataset",
+    "DUTS_DATA_PATH": "data/duts-saliency-detection-dataset",
+    "AIM500_DATA_PATH": "data/dataset-matting/AIM-500-20251128T092629Z-1-001/AIM-500",
     "BEST_MODEL_SAVE_DIR": "best_models/train_best_models",
     "FT_BEST_MODEL_SAVE_DIR": "best_models/FT_best_models",
     "METRICS_SAVE_DIR": "metrics/train_metrics",
@@ -28,6 +27,7 @@ config = {
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
 
     # General model parameters
+    "MODEL_TYPE": "custom_unet", # "smp_unet"
     "IMAGE_SIZE": 512,
     "BATCH_SIZE": 16,
     "BASE_CH": 32,
@@ -35,7 +35,7 @@ config = {
     "NUM_CL": 1,
 
     # Data parameters
-    "DUTS_SUBSET_SIZE": 2500,
+    "DUTS_SUBSET_SIZE": 3000,
     "AIM_SUBSET_SIZE": None,
 
     # === Training parameters ===
@@ -95,6 +95,7 @@ set_seed(SEED)
 DEVICE = config["DEVICE"]
 
 # General model parameters
+MODEL_TYPE = config["MODEL_TYPE"]
 IMAGE_SIZE = config["IMAGE_SIZE"]
 BATCH_SIZE = config["BATCH_SIZE"]
 BASE_CH = config["BASE_CH"]

@@ -13,16 +13,18 @@ class ConvBlock(nn.Module):
     """
     def __init__(self, in_ch, out_ch):
         super().__init__()
-        self.conv1 = nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1)
-        self.relu = nn.ReLU(inplace=True)
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_ch, out_ch, 3, padding=1, bias=False),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(out_ch, out_ch, 3, padding=1, bias=False),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True),
+        )
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        out = self.relu(x)
-        return out
+        return self.conv(x)
 
 
 # -----------------------------
@@ -86,7 +88,10 @@ class UNet(nn.Module):
         self.down4 = DownSample(base_ch*4, base_ch*8)
 
         # Bottleneck
-        self.bottleneck = ConvBlock(base_ch*8, base_ch*16)
+        self.bottleneck = nn.Sequential(
+            ConvBlock(base_ch*8, base_ch*16),
+            nn.Dropout2d(0.3)
+        )
 
         # Upsampling path
         self.up1 = UpSample(base_ch*16, base_ch*8)

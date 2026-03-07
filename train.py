@@ -2,33 +2,33 @@ import torch
 import mlflow
 import mlflow.pytorch
 
-from torch import nn
 from torch import optim
 
 from configs.config import *
-from models.UNet import UNet
+from models.model_factory import get_model
 from metrics.io import save_metrics
 from metrics.IoU_metric import iou_metric
 from metrics.mse_metric import mse_metric
+from training.callbacks import EarlyStopping, MLflowLoggerCallback
+from training.losses import BCEDiceLoss
 from training.loops import run_train
 from data.loaders import get_loaders
 from data.datasets import DUTSdataset, AIM500_dataset
 from data.transforms import get_train_transforms, get_val_transforms
-from training.callbacks import EarlyStopping, MLflowLoggerCallback
 
 
 
 def main():
-    train_transforms = get_train_transforms(image_size=IMAGE_SIZE)
-    val_test_transforms = get_val_transforms(image_size=IMAGE_SIZE)
-    model = UNet(in_ch=IN_CH, num_cl=NUM_CL, base_ch=BASE_CH).to(DEVICE)
+    train_transforms = get_train_transforms(img_size=IMAGE_SIZE)
+    val_test_transforms = get_val_transforms(img_size=IMAGE_SIZE)
+    model = get_model(MODEL_TYPE)
 
     metric_funcs = [mse_metric, iou_metric]
 
     if RUNNING_TRAIN:
         stage = "pretrain"
 
-        criterion = nn.BCEWithLogitsLoss()
+        criterion = BCEDiceLoss()
         optimizer = optim.Adam(model.parameters(), lr=LR)
         lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
@@ -85,7 +85,7 @@ def main():
         if FINETUNE:
             stage = "finetune"
 
-            FT_criterion = nn.BCEWithLogitsLoss()
+            FT_criterion = BCEDiceLoss()
             FT_optimizer = optim.Adam(model.parameters(), lr=FT_LR)
             FT_lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 FT_optimizer,

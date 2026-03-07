@@ -13,13 +13,14 @@ from data.transforms import get_val_transforms
 
 @click.command()
 
+@click.option("--model_type", "-mt", required=True, help="Model type to use")
 @click.option("--img_path", "-i", required=True, help="Path to input image")
 @click.option("--weights_path", "-w", required=True, help="Path to model weights")
 @click.option("--output_path", "-o", required=True, help="Path to save predicted mask")
 @click.option("--img_size", default=512, type=int, help="Resize image to this size for inference")
 @click.option("--device", "-d", default=DEVICE, help="Device using for inference")
 
-def main(img_path, weights_path, output_path, img_size, device):
+def main(model_type, img_path, weights_path, output_path, img_size, device):
     device = torch.device(device)
 
     if not os.path.exists(img_path):
@@ -29,7 +30,7 @@ def main(img_path, weights_path, output_path, img_size, device):
         raise FileNotFoundError(f"Model weights not found: {weights_path}")
 
     transforms = get_val_transforms(img_size)
-    model = load_model(weights_path, IN_CH, NUM_CL, BASE_CH, device=device)
+    model = load_model(model_type, weights_path, IN_CH, NUM_CL, BASE_CH, device=device)
 
     mask = predict_single_image(img_path, model, transforms, device=device)
 
