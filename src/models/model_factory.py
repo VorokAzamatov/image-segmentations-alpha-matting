@@ -1,6 +1,6 @@
 import segmentation_models_pytorch as smp
 
-from models.UNet import UNet
+from models.unet import UNet
 
 def get_model(model_type, in_ch, num_cl, base_ch, device):
 
