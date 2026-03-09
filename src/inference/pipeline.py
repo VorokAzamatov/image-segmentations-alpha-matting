@@ -50,6 +50,7 @@ def preprocess_image(image_input, transforms):
     
 
 def postprocess_pred(pred, orig_size):
+
     orig_h, orig_w = orig_size
 
     mask = pred[0, 0].detach().cpu().numpy()
@@ -62,6 +63,7 @@ def postprocess_pred(pred, orig_size):
 
 
 def predict_single_image(img_input, model, transforms, device):
+    
     img, orig_size = preprocess_image(img_input, transforms)
     
     x = img.unsqueeze(dim=0).to(device)
